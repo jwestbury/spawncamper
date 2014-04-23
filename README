@@ -1,0 +1,11 @@
+Spawncamper is a set of Python scripts to automate the discovery of new hosts
+for Nagios monitoring, and to add those hosts to the Nagios configuration files.
+It utilizes DNS zone transfers (AXFR) to pull data from a local DNS server,
+and uses this information to determine if a given host already exists in the
+Nagios configuration, adding it to a new_hosts.cfg file if not, and e-mails
+relevant adminitrators to alert them to the discovery of a new host to add.
+
+Spawncamper can be configured to use CIDR subnets or a specified IP range to
+determine whether or not a host found in a given DNS zone should be monitored.
+Inidividual hosts can also be added to an exclusion list, so that they will
+not be monitored, and will not be added to the new_hosts.cfg file.
