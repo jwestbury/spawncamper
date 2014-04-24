@@ -1,11 +1,7 @@
 #!/usr/bin/python
 #nag_auto_add.py
 
-# TODO: Need to gather a list of hostnames already in config files before
-# iterating through the hosts that come through in the zone transfer. Doing
-# this at the beginning of the script and dumping them into a list will provide
-# much better performance than searching the entire set of object definitions
-# every single time a host within the target IP range/subnet is found.
+# TODO: Add host exclusion list
 
 import argparse
 import axfr
@@ -88,6 +84,7 @@ for rootdir, dirnames, filenames in os.walk(args.hostdirectory):
 
 # Function to match hosts based on user-specified match type
 def host_match(matchtype):
+	fh = open("%s/spawncamper.cfg" % args.hostdirectory, 'a+')
 	if matchtype == "cidr":
 		suffix = str(args.subnet).split('/')[1] # get CIDR suffix
 		targetnet = IPNetwork(args.subnet)	
@@ -98,7 +95,15 @@ def host_match(matchtype):
 				if name in hostobjects:
 					print "%s matches, but already exists." % name
 				else:
-					print "%s matches and does not exist." % name
+					print "%s matches and does not exist. Adding." % name
+					fh.write("""
+#define_host{
+#	use		spawncamper-host
+#	host_name	%s
+#	address		%s
+#	}
+
+					""" % (name, ip))
 			else:
 				print "%s does not match." % name
 	elif matchtype == "iprange":
