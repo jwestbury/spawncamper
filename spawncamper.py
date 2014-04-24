@@ -71,20 +71,23 @@ define host{
 tf.close()
 
 # Get a list of hosts already in the object definitions
-hostobjects = []
+hostobjectsbyname = []
+hostobjectsbyaddress = []
 
 for rootdir, dirnames, filenames in os.walk(args.hostdirectory):
 	for file in filenames:
 		fh = open("%s/%s" % (rootdir, file))
 		for line in fh.readlines():
-			m = re.search(r'^\s+host_name\s+(\w+)\s*;?\w*?[\S\s]*?$', line)
-			if m:
-				hostobjects.append(m.group(1).lower())
+			m1 = re.search(r'^\s+host_name\s+(\w+)\s*;?\w*?[\S\s]*?$', line)
+			m2 = re.search(r'^\s+address\s+([\d\.]+)\s*;?\w*?[\S\s]*?$', line)
+			if m1:
+				hostobjectsbyname.append(m1.group(1).lower())
+			elif m2:
+				hostobjectsbyaddress.append(m2.group(1))
 		fh.close()
 
 # Function to match hosts based on user-specified match type
 def host_match(matchtype):
-	fh = open("%s/spawncamper.cfg" % args.hostdirectory, 'a+')
 	if matchtype == "cidr":
 		suffix = str(args.subnet).split('/')[1] # get CIDR suffix
 		targetnet = IPNetwork(args.subnet)	
@@ -92,18 +95,11 @@ def host_match(matchtype):
 			name = str(name).lower()
 			ipnet = IPNetwork('%s/%s' % (ip, suffix))
 			if ipnet == targetnet:
-				if name in hostobjects:
+				if ip in hostobjectsbyaddress or name in hostobjectsbyname:
 					print "%s matches, but already exists." % name
 				else:
 					print "%s matches and does not exist. Adding." % name
-					fh.write("""
-#define_host{
-#	use		spawncamper-host
-#	host_name	%s
-#	address		%s
-#	}
-
-					""" % (name, ip))
+					write_host(name, ip)
 			else:
 				print "%s does not match." % name
 	elif matchtype == "iprange":
@@ -112,9 +108,24 @@ def host_match(matchtype):
 		for name, ip in hostlist.items():
 			ip = IPAddress(ip)
 			if ip >= startip and ip <= endip:
-				print "%s is within the target subnet." % name
+				if ip in hostobjectsbyaddress or name in hostobjectsbyname:
+					print "%s matches, but already exists." % name
+				else:
+					print "%s matches and does not exist. Adding." % name
+					write_host(name, ip)
 			else:
 				print "%s is not within the target subnet." % name
+
+def write_host(hostname, ip):
+	fh = open("%s/spawncamper.cfg" % args.hostdirectory, 'a+')
+	fh.write("""
+#define_host{
+#	use		spawncamper-host
+#	host_name	%s
+#	address		%s
+#	}
+
+	""" % (hostname, ip))
 		
 if args.subnet and (args.startip or args.endip):
 	print "Cannot use -c with -s or -e. Please use -c or -s and -e."
