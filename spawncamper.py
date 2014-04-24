@@ -28,11 +28,44 @@ parser.add_argument('-d', '--hostdirectory', help="""Nagios host configuration
 	directory. nag_auto_add will not add new hosts if they already exist in
 	a file within this directory. Default: /usr/local/nagios/etc/objects""",
 	default="/usr/local/nagios/etc/objects")
+parser.add_argument('-t', '--templatefile', help="""Nagios template file
+	name. Default: templates.cfg.""", default="templates.cfg")
 parser.add_argument('-m', '--email', help="""Send e-mails to this address when
 	new hosts are discovered.""")
 args = parser.parse_args()
 
 hostlist = axfr.transfer(args.zone, args.nameserver)
+
+# Check to see if spawncamper template already exists
+tf = open("%s/%s" % (args.hostdirectory, args.templatefile), 'a+')
+if not "spawncamper-host" in tf.read():
+	template = """
+###############################################################################
+###############################################################################
+#
+# SPAWNCAMPER
+#
+###############################################################################
+###############################################################################
+
+# Template for hosts automatically added using spawncamper.py
+
+define host{
+	name				spawncamper-host
+	notifications_enabled		0
+	event_handler_enabled		1
+	flap_detection_enabled		1
+	process_perf_data		1
+	retain_status_information	1
+	retain_non_status_information	1
+	register			0
+	}
+	"""
+	
+	tf.write(template)
+
+tf.close()
+
 
 def host_match(matchtype):
 	if matchtype == "cidr":
