@@ -3,6 +3,7 @@
 
 import argparse
 import axfr
+from netaddr import IPNetwork, IPAddress
 
 parser = argparse.ArgumentParser(description="""Automatically adds hosts 
 	to Nagios configurations, using AXFR zone transfers from a specified 
@@ -14,10 +15,10 @@ parser.add_argument('-n', '--nameserver', required=True, help="""Nameserver agai
 	which to perform query""")
 parser.add_argument('-c', '--subnet', help="""CIDR subnet in which monitored
 	hosts reside. Cannot be used in conjunction with -s and -e.""")
-parser.add_argument('-s', '--start-ip', help="""Must be used with -e. Defines
+parser.add_argument('-s', '--startip', help="""Must be used with -e. Defines
 	the start point of an IP range in which monitored hosts reside. Cannot
 	be used in conjunction with -c.""")
-parser.add_argument('-e', '--end-ip', help="""Must be used with -s. Defines the
+parser.add_argument('-e', '--endip', help="""Must be used with -s. Defines the
 	end point of an IP range in which monitored hosts reside. Cannot be
 	used in conjunction with -c.""")
 parser.add_argument('-d', '--hostdirectory', help="""Nagios host configuration
@@ -28,11 +29,39 @@ parser.add_argument('-m', '--email', help="""Send e-mails to this address when
 	new hosts are discovered.""")
 args = parser.parse_args()
 
-hostlist = axfr.transfer(zone, ns)
+hostlist = axfr.transfer(args.zone, args.nameserver)
 
-for n, i in hostlist.items():
-	print "%s: %s" % (n, i)
-
+def host_match(kind):
+	if kind == "cidr":
+		suffix = str(args.subnet).split('/')[1] # get CIDR suffix
+		targetnet = IPNetwork(args.subnet)	
+		for name, ip in hostlist.items():
+			ipnet = IPNetwork('%s/%s' % (ip, suffix))
+			if ipnet == targetnet:
+				print "%s is within the target subnet." % name
+			else:
+				print "%s is not within the target subnet." % name
+	elif kind == "iprange":
+		startip = IPAddress(args.startip)
+		endip = IPAddress(args.endip)
+		for name, ip in hostlist.items():
+			ip = IPAddress(ip)
+			if ip >= startip and ip <= endip:
+				print "%s is within the target subnet." % name
+			else:
+				print "%s is not within the target subnet." % name
+		
+if args.subnet and args.startip and args.endip:
+	print "Cannot use -c with -s or -e. Please use -c or -s and -e."
+	quit()
+elif args.subnet:
+	host_match("cidr")
+elif args.startip and args.endip:
+	host_match("iprange")
+else:
+	print "Matching for entire zone %s. Press Enter if you're sure." % args.zone
+	raw_input()
+	
 
 #DESCRIPTION
 #	Queries a DNS server, performing an AXFR zone transfer to obtain a list
