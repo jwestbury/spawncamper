@@ -25,7 +25,7 @@ parser.add_argument('-d', '--hostdirectory', help="""Nagios host configuration
 	a file within this directory. Default: /usr/local/nagios/etc/objects""",
 	default="/usr/local/nagios/etc/objects")
 parser.add_argument('-d', '--email', help="""Send e-mails to this address when
-	new hosts are discovered.")
+	new hosts are discovered.""")
 args = parser.parse_args()
 
 hostlist = axfr.transfer(zone, ns)
