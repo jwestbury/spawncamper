@@ -24,7 +24,7 @@ parser.add_argument('-d', '--hostdirectory', help="""Nagios host configuration
 	directory. nag_auto_add will not add new hosts if they already exist in
 	a file within this directory. Default: /usr/local/nagios/etc/objects""",
 	default="/usr/local/nagios/etc/objects")
-parser.add_argument('-d', '--email', help="""Send e-mails to this address when
+parser.add_argument('-m', '--email', help="""Send e-mails to this address when
 	new hosts are discovered.""")
 args = parser.parse_args()
 
