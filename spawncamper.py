@@ -1,11 +1,16 @@
 #!/usr/bin/python
 #nag_auto_add.py
 
-# TODO: check templates.cfg in nagios dir for spawncamper-auto-add template,
-# create if not there.
+# TODO: Need to gather a list of hostnames already in config files before
+# iterating through the hosts that come through in the zone transfer. Doing
+# this at the beginning of the script and dumping them into a list will provide
+# much better performance than searching the entire set of object definitions
+# every single time a host within the target IP range/subnet is found.
 
 import argparse
 import axfr
+import re
+import os
 from netaddr import IPNetwork, IPAddress
 
 parser = argparse.ArgumentParser(description="""Automatically adds hosts 
@@ -35,6 +40,9 @@ parser.add_argument('-m', '--email', help="""Send e-mails to this address when
 args = parser.parse_args()
 
 hostlist = axfr.transfer(args.zone, args.nameserver)
+
+# Show args to user
+print args
 
 # Check to see if spawncamper template already exists
 tf = open("%s/%s" % (args.hostdirectory, args.templatefile), 'a+')
@@ -66,17 +74,33 @@ define host{
 
 tf.close()
 
+# Get a list of hosts already in the object definitions
+hostobjects = []
 
+for rootdir, dirnames, filenames in os.walk(args.hostdirectory):
+	for file in filenames:
+		fh = open("%s/%s" % (rootdir, file))
+		for line in fh.readlines():
+			m = re.search(r'^\s+host_name\s+(\w+)\s*;?\w*?[\S\s]*?$', line)
+			if m:
+				hostobjects.append(m.group(1).lower())
+		fh.close()
+
+# Function to match hosts based on user-specified match type
 def host_match(matchtype):
 	if matchtype == "cidr":
 		suffix = str(args.subnet).split('/')[1] # get CIDR suffix
 		targetnet = IPNetwork(args.subnet)	
 		for name, ip in hostlist.items():
+			name = str(name).lower()
 			ipnet = IPNetwork('%s/%s' % (ip, suffix))
 			if ipnet == targetnet:
-				print "%s is within the target subnet." % name
+				if name in hostobjects:
+					print "%s matches, but already exists." % name
+				else:
+					print "%s matches and does not exist." % name
 			else:
-				print "%s is not within the target subnet." % name
+				print "%s does not match." % name
 	elif matchtype == "iprange":
 		startip = IPAddress(args.startip)
 		endip = IPAddress(args.endip)
