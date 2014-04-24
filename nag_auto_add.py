@@ -20,13 +20,18 @@ parser.add_argument('-s', '--start-ip', help="""Must be used with -e. Defines
 parser.add_argument('-e', '--end-ip', help="""Must be used with -s. Defines the
 	end point of an IP range in which monitored hosts reside. Cannot be
 	used in conjunction with -c.""")
-parser.add_argument('-d', '--host-directory', help="""Nagios host configuration
+parser.add_argument('-d', '--hostdirectory', help="""Nagios host configuration
 	directory. nag_auto_add will not add new hosts if they already exist in
 	a file within this directory. Default: /usr/local/nagios/etc/objects""",
 	default="/usr/local/nagios/etc/objects")
+parser.add_argument('-d', '--email', help="""Send e-mails to this address when
+	new hosts are discovered.")
 args = parser.parse_args()
 
-axfr.transfer(zone)
+hostlist = axfr.transfer(zone, ns)
+
+for n, i in hostlist.items():
+	print "%s: %s" % (n, i)
 
 
 #DESCRIPTION
@@ -45,5 +50,5 @@ axfr.transfer(zone)
 #	-h	: Nagios host configuration directory. nag_auto_add will not
 #		  add new hosts if they already exist in a file within this
 #		  directory. (Default: /usr/local/nagios/etc/objects)
-#	-m	:Send updates to this address when hosts are discovered.
+#	-m	: Send updates to this address when hosts are discovered.
 #"""

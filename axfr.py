@@ -5,6 +5,14 @@ axfr.py
 
 Created by Stefan Schmidt on 2009-08-09.
 Copyright (c) 2009 __MyCompanyName__. All rights reserved.
+
+Last updated by James Westbury, 4/23/2014
+
+CHANGELOG
+4/23/2014
+--Moved main functionality into subroutine, transfer()
+---takes two arguments, DNS zone and nameserver
+---returns a dictionary containing hostnames as keys and IPs as values
 """
 
 import sys
@@ -19,24 +27,9 @@ import dnspython.zone
 from dnspython.exception import DNSException
 from dnspython.rdataclass import IN
 from dnspython.rdatatype import A
-#from sys import argv
-
-# domain = "visitors.har2009.net"
-# n="87.76.11.14"
-# script, domain, n = argv
 
 def transfer(domain, n):
-#	domain = ''
-#	n = ''
-#	myopts, args = getopt.getopt(argv[1:],"z:n:")
-#	for opt, content in myopts:
-#		if opt == '-z':
-#			domain = content
-#		elif opt == '-n':
-#			n = content
-#		else:
-#			print "Usage: %s -z ZONE -ns NAMESERVER" % argv[0]
-		
+	hostlist = {}
 	print "Getting NS records for", domain
 	answers = dnspython.resolver.query(domain, 'NS')
 	print "\nTrying a zone transfer for %s from name server %s" % (domain, n)
@@ -48,6 +41,5 @@ def transfer(domain, n):
 		rdatasets = node.rdatasets
 		for rdataset in rdatasets:
 			if rdataset.rdclass == IN and rdataset.rdtype is A:
-#				print name
-#				print " " + str(rdataset[0]) + ""
-				return(name, str(rdataset[0]))
+				hostlist[name] = str(rdataset[0])
+	return hostlist
