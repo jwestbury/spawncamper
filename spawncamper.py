@@ -1,6 +1,9 @@
 #!/usr/bin/python
 #nag_auto_add.py
 
+# TODO: check templates.cfg in nagios dir for spawncamper-auto-add template,
+# create if not there.
+
 import argparse
 import axfr
 from netaddr import IPNetwork, IPAddress
@@ -31,8 +34,8 @@ args = parser.parse_args()
 
 hostlist = axfr.transfer(args.zone, args.nameserver)
 
-def host_match(kind):
-	if kind == "cidr":
+def host_match(matchtype):
+	if matchtype == "cidr":
 		suffix = str(args.subnet).split('/')[1] # get CIDR suffix
 		targetnet = IPNetwork(args.subnet)	
 		for name, ip in hostlist.items():
@@ -41,7 +44,7 @@ def host_match(kind):
 				print "%s is within the target subnet." % name
 			else:
 				print "%s is not within the target subnet." % name
-	elif kind == "iprange":
+	elif matchtype == "iprange":
 		startip = IPAddress(args.startip)
 		endip = IPAddress(args.endip)
 		for name, ip in hostlist.items():
