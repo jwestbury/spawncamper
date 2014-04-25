@@ -60,7 +60,9 @@ def host_list(hostdirectory = '/usr/local/nagios/etc/objects'):
 			fh.close()
 	return hostobjectsbyaddress, hostobjectsbyname
 
-def host_match(matchtype = 'cidr', hostlist = None, subnet = None, startip = None, endip = None, hostdirectory = '/usr/local/nagios/etc/objects', iplist = None, namelist = None):
+def host_match(matchtype = 'cidr', hostlist = None, subnet = None, startip = None,
+	endip = None, hostdirectory = '/usr/local/nagios/etc/objects', iplist = None,
+	namelist = None):
 	"""Determines whether or not a host matches the specified criteria for addition to spawncamper.cfg"""
 	if matchtype == "cidr":
 		suffix = str(subnet).split('/')[1] # get CIDR suffix
@@ -72,7 +74,8 @@ def host_match(matchtype = 'cidr', hostlist = None, subnet = None, startip = Non
 				if ip in iplist or name in namelist:
 					print "%s matches, but already exists." % name
 				else:
-					print "%s matches and does not exist. Adding." % name
+					print ("%s matches and does not exist. Adding." %
+						 name)
 					write_host(name, ip, hostdirectory)
 			else:
 				print "%s does not match." % name
@@ -86,7 +89,8 @@ def host_match(matchtype = 'cidr', hostlist = None, subnet = None, startip = Non
 				if ip in iplist or name in namelist:
 					print "%s matches, but already exists." % name
 				else:
-					print "%s matches and does not exist. Adding." % name
+					print ("%s matches and does not exist. Adding." %
+						 name)
 					write_host(name, ip, hostdirectory)
 			else:
 				print "%s is not within the target subnet." % name
@@ -115,11 +119,15 @@ def main(args):
 		print "Cannot use -c with -s or -e. Please use -c or -s and -e."
 		quit()
 	elif args.subnet:
-		host_match(matchtype = "cidr", hostlist = hostlist, subnet = args.subnet, hostdirectory = args.hostdirectory, iplist = l1, namelist = l2)
+		host_match(matchtype = "cidr", hostlist = hostlist, subnet = args.subnet,
+			hostdirectory = args.hostdirectory, iplist = l1, namelist = l2)
 	elif args.startip and args.endip:
-		host_match(matchtype = "iprange", hostlist = hostlist, startip = args.startip, endip = args.endip, hostdirectory = args.hostdirectory, iplist = l1, namelist = l2)
+		host_match(matchtype = "iprange", hostlist = hostlist,
+			startip = args.startip, endip = args.endip,
+			hostdirectory = args.hostdirectory, iplist = l1, namelist = l2)
 	else:
-		print "Matching for entire zone %s. Press Enter if you're sure." % args.zone
+		print ("Matching for entire zone %s. Press Enter if you're sure." % 
+			args.zone)
 		raw_input()
 
 if __name__ == '__main__':
@@ -127,8 +135,8 @@ if __name__ == '__main__':
                 to Nagios configurations, using AXFR zone transfers from a specified
                 DNS server""")
 
-        parser.add_argument('-z', '--zone', type=str, required=True, help="""DNS zone to query
-                (e.g. internal.company.com)""")
+        parser.add_argument('-z', '--zone', type=str, required=True,
+		help="""DNS zone to query (e.g. internal.company.com)""")
         parser.add_argument('-n', '--nameserver', required=True, help="""Nameserver against
                 which to perform query""")
         parser.add_argument('-c', '--subnet', help="""CIDR subnet in which monitored
