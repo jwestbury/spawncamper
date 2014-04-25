@@ -1,13 +1,75 @@
+CONTENTS
+
+--Overview
+--Usage
+--Config file
+--Exclusions
+
+
+OVERVIEW
+
 Spawncamper is a set of Python scripts to automate the discovery of new hosts
 for Nagios monitoring, and to add those hosts to the Nagios configuration files.
 It utilizes DNS zone transfers (AXFR) to pull data from a local DNS server,
 and uses this information to determine if a given host already exists in the
-Nagios configuration, adding it to a new_hosts.cfg file if not, and e-mails
+Nagios configuration, adding it to a spawncamper.cfg file if not, and e-mails
 relevant adminitrators to alert them to the discovery of a new host to add.
 
 Spawncamper can be configured to use CIDR subnets or a specified IP range to
 determine whether or not a host found in a given DNS zone should be monitored.
 Inidividual hosts can also be added to an exclusion list, so that they will
-not be monitored, and will not be added to the new_hosts.cfg file.
+not be monitored, and will not be added to the spawncamper.cfg file.
 
 Integrates DNS functionality from Stefan Schmidt's morepowerdns library.
+
+
+USAGE
+
+usage: spawncamper.py [-h] -z ZONE -n NAMESERVER [-c SUBNET] [-s STARTIP]
+                      [-e ENDIP] [-d HOSTDIRECTORY] [-t TEMPLATEFILE]
+                      [-m EMAIL] [--configfile CONFIGFILE]
+
+Automatically adds hosts to Nagios configurations, using AXFR zone transfers
+from a specified DNS server
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -z ZONE, --zone ZONE  DNS zone to query (e.g. internal.company.com)
+  -n NAMESERVER, --nameserver NAMESERVER
+                        Nameserver against which to perform query
+  -c SUBNET, --subnet SUBNET
+                        CIDR subnet in which monitored hosts reside. Cannot be
+                        used in conjunction with -s and -e.
+  -s STARTIP, --startip STARTIP
+                        Must be used with -e. Defines the start point of an IP
+                        range in which monitored hosts reside. Cannot be used
+                        in conjunction with -c.
+  -e ENDIP, --endip ENDIP
+                        Must be used with -s. Defines the end point of an IP
+                        range in which monitored hosts reside. Cannot be used
+                        in conjunction with -c.
+  -d HOSTDIRECTORY, --hostdirectory HOSTDIRECTORY
+                        Nagios host configuration directory. nag_auto_add will
+                        not add new hosts if they already exist in a file
+                        within this directory. Default:
+                        /usr/local/nagios/etc/objects
+  -t TEMPLATEFILE, --templatefile TEMPLATEFILE
+                        Nagios template file name. Default: templates.cfg.
+  -m EMAIL, --email EMAIL
+                        Send e-mails to this address when new hosts are
+                        discovered.
+  --configfile CONFIGFILE
+                        Specify alternate config file. Default:
+                        spawncamper.conf
+
+
+CONFIG FILE
+
+...
+
+
+EXCLUSIONS
+
+Hosts which you desire to exclude from Spawncamper's discovery can be listed, 
+in plain text, in the exclusions file, one host per line. Spawncamper will 
+skip these files when discovering new hosts.
