@@ -9,10 +9,6 @@ import re
 import os
 from netaddr import IPNetwork, IPAddress
 
-# Intitialize lists
-#hostobjectsbyaddress = ['0.0.0.0']
-#hostobjectsbyname = ['@']
-
 def build_template(hostdirectory, templatefile):
 	"""Adds the Spawncamper template to Nagios templates config if it is not there already"""
 	tf = open("%s/%s" % (hostdirectory, templatefile), 'a+')
