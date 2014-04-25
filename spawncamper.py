@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #nag_auto_add.py
 
 # TODO: Add host exclusion list
