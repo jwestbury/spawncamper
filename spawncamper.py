@@ -5,8 +5,9 @@
 
 import argparse
 import axfr
-import re
 import os
+import re
+import smtplib
 from netaddr import IPNetwork, IPAddress
 
 def build_template(hostdirectory, templatefile):
@@ -44,6 +45,7 @@ def host_list(hostdirectory = '/usr/local/nagios/etc/objects'):
 	"""Generates lists of host names and IPs in existing Nagios object definitions"""
 	hostobjectsbyname = []
 	hostobjectsbyaddress = []
+	exclusions = []
 	for rootdir, dirnames, filenames in os.walk(hostdirectory):
 		print "Check object defs in %s" % hostdirectory
 		for file in filenames:
@@ -58,17 +60,24 @@ def host_list(hostdirectory = '/usr/local/nagios/etc/objects'):
 					hostobjectsbyaddress.append(m2.group(1))
 					print "Found %s in object defs." % m2.group(1)
 			fh.close()
-	return hostobjectsbyaddress, hostobjectsbyname
+	fh = open("exclusions", 'r')
+	for line in fh.readlines():
+		exclusions.append(line.lower().rstrip('\r\n'))
+	fh.close()
+	return hostobjectsbyaddress, hostobjectsbyname, exclusions
 
 def host_match(matchtype = 'cidr', hostlist = None, subnet = None, startip = None,
 	endip = None, hostdirectory = '/usr/local/nagios/etc/objects', iplist = None,
-	namelist = None):
+	namelist = None, exclusions = None):
 	"""Determines whether or not a host matches the specified criteria for addition to spawncamper.cfg"""
 	if matchtype == "cidr":
 		suffix = str(subnet).split('/')[1] # get CIDR suffix
 		targetnet = IPNetwork(subnet)	
 		for name, ip in hostlist.items():
 			name = str(name).lower()
+			if name in exclusions:
+				print "Found %s in exclusions list, skipping." % name
+				continue
 			ipnet = IPNetwork('%s/%s' % (ip, suffix))
 			if ipnet == targetnet:
 				if ip in iplist or name in namelist:
@@ -105,26 +114,32 @@ def write_host(hostname, ip, hostdirectory):
 #	address		%s
 #	}
 
-	""" % (hostname, ip))
+	"""
+	% (hostname, ip))
 		
+#def send_email(address):
+	
+
 def main(args):
 	# Show args to user
 	print args
 
 	build_template(args.hostdirectory, args.templatefile)
 	hostlist = axfr.transfer(args.zone, args.nameserver)
-	l1, l2 = host_list(args.hostdirectory)
+	l1, l2, exclusions = host_list(args.hostdirectory)
 
 	if args.subnet and (args.startip or args.endip):
 		print "Cannot use -c with -s or -e. Please use -c or -s and -e."
 		quit()
 	elif args.subnet:
 		host_match(matchtype = "cidr", hostlist = hostlist, subnet = args.subnet,
-			hostdirectory = args.hostdirectory, iplist = l1, namelist = l2)
+			hostdirectory = args.hostdirectory, iplist = l1, namelist = l2,
+			exclusions = exclusions)
 	elif args.startip and args.endip:
 		host_match(matchtype = "iprange", hostlist = hostlist,
 			startip = args.startip, endip = args.endip,
-			hostdirectory = args.hostdirectory, iplist = l1, namelist = l2)
+			hostdirectory = args.hostdirectory, iplist = l1, namelist = l2,
+			exclusions = exclusions)
 	else:
 		print ("Matching for entire zone %s. Press Enter if you're sure." % 
 			args.zone)
