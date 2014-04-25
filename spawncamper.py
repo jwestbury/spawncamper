@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 #nag_auto_add.py
 
-# TODO: Add host exclusion list
-
 import argparse
 import axfr
 import os
 import re
 import smtplib
 from netaddr import IPNetwork, IPAddress
+from time import strftime
 
 def build_template(hostdirectory, templatefile):
 	"""Adds the Spawncamper template to Nagios templates config if it is not there already"""
@@ -70,6 +69,7 @@ def host_match(matchtype = 'cidr', hostlist = None, subnet = None, startip = Non
 	endip = None, hostdirectory = '/usr/local/nagios/etc/objects', iplist = None,
 	namelist = None, exclusions = None):
 	"""Determines whether or not a host matches the specified criteria for addition to spawncamper.cfg"""
+	foundhosts = []
 	if matchtype == "cidr":
 		suffix = str(subnet).split('/')[1] # get CIDR suffix
 		targetnet = IPNetwork(subnet)	
@@ -86,6 +86,7 @@ def host_match(matchtype = 'cidr', hostlist = None, subnet = None, startip = Non
 					print ("%s matches and does not exist. Adding." %
 						 name)
 					write_host(name, ip, hostdirectory)
+					foundhosts.append(name)
 			else:
 				print "%s does not match." % name
 	elif matchtype == "iprange":
@@ -101,8 +102,10 @@ def host_match(matchtype = 'cidr', hostlist = None, subnet = None, startip = Non
 					print ("%s matches and does not exist. Adding." %
 						 name)
 					write_host(name, ip, hostdirectory)
+					foundhosts.add(name)
 			else:
 				print "%s is not within the target subnet." % name
+	return foundhosts
 
 def write_host(hostname, ip, hostdirectory):
 	"""Adds the specified host to spawncamper.cfg"""
@@ -117,8 +120,33 @@ def write_host(hostname, ip, hostdirectory):
 	"""
 	% (hostname, ip))
 		
-#def send_email(address):
+def send_email(address = None, settings = None, hosts = None):
+	if hosts and address:
+		msg = "SUBJECT: Spawncamper report, generated %s\n\n" % strftime("%Y-%m-%d %H:%M")
+		msg += "Spawncamper has added the following hosts to the spawncamper.cfg object defs:\n\n"
+		for host in hosts:
+			msg = msg + "\t%s\n" % host
+		em = smtplib.SMTP_SSL(settings['server'], settings['port'])
+		em.set_debuglevel(1)
+		em.login(settings['username'], settings['password'])
+		em.sendmail(settings['from'], address, msg)
+		em.quit()
+	elif hosts and not address:
+		print "New hosts found, but no e-mail address specified."
+	else:
+		print "No new host list specified for e-mail."
 	
+def read_config(config = None):
+	if config:
+		cfg = open(config, 'r')
+	else:
+		cfg = open("spawncamper.conf", 'r')
+	settings = {}
+	for line in cfg.readlines():
+		# settings.update([e.strip() for e in line.split(':')])
+		l = [e.strip() for e in line.split(':')]
+		settings[l[0]] = l[1]
+	return settings
 
 def main(args):
 	# Show args to user
@@ -128,15 +156,19 @@ def main(args):
 	hostlist = axfr.transfer(args.zone, args.nameserver)
 	l1, l2, exclusions = host_list(args.hostdirectory)
 
+	if args.configfile:
+		settings = read_config(config = args.configfile)
+	else:
+		settings = read_config()
 	if args.subnet and (args.startip or args.endip):
 		print "Cannot use -c with -s or -e. Please use -c or -s and -e."
 		quit()
 	elif args.subnet:
-		host_match(matchtype = "cidr", hostlist = hostlist, subnet = args.subnet,
-			hostdirectory = args.hostdirectory, iplist = l1, namelist = l2,
-			exclusions = exclusions)
+		foundhosts = host_match(matchtype = "cidr", hostlist = hostlist,
+			subnet = args.subnet, hostdirectory = args.hostdirectory,
+			iplist = l1, namelist = l2, exclusions = exclusions)
 	elif args.startip and args.endip:
-		host_match(matchtype = "iprange", hostlist = hostlist,
+		foundhosts = host_match(matchtype = "iprange", hostlist = hostlist,
 			startip = args.startip, endip = args.endip,
 			hostdirectory = args.hostdirectory, iplist = l1, namelist = l2,
 			exclusions = exclusions)
@@ -144,6 +176,8 @@ def main(args):
 		print ("Matching for entire zone %s. Press Enter if you're sure." % 
 			args.zone)
 		raw_input()
+	if args.email:
+		send_email(address = args.email, settings = settings, hosts = foundhosts)
 
 if __name__ == '__main__':
         parser = argparse.ArgumentParser(description="""Automatically adds hosts
@@ -170,6 +204,8 @@ if __name__ == '__main__':
                 name. Default: templates.cfg.""", default="templates.cfg")
         parser.add_argument('-m', '--email', help="""Send e-mails to this address when
                 new hosts are discovered.""")
+	parser.add_argument('--configfile', help="""Specify alternate config file. 
+		Default: spawncamper.conf""")
         args = parser.parse_args()
 
 	main(args)
