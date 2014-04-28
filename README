@@ -65,7 +65,11 @@ optional arguments:
 
 CONFIG FILE
 
-...
+Spawncamper.conf stores settings for e-mail functionality. It stores a password 
+in plaintext, so it is advisable to use a dedicated service e-mail account, and 
+to restrict access to the Spawncamper directory to only those users you wish to 
+know this password. Alternatively, you may decline to use e-mail functionality, 
+or choose to use your own e-mail application.
 
 
 EXCLUSIONS
