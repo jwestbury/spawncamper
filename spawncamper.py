@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#nag_auto_add.py
+#spawncamper.py
 
 import argparse
 import axfr
