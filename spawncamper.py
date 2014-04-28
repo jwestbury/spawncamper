@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 #nag_auto_add.py
 
+# TODO: add exception handling and logging
+
 import argparse
 import axfr
 import os

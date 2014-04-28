@@ -20,7 +20,8 @@ determine whether or not a host found in a given DNS zone should be monitored.
 Inidividual hosts can also be added to an exclusion list, so that they will
 not be monitored, and will not be added to the spawncamper.cfg file.
 
-Integrates DNS functionality from Stefan Schmidt's morepowerdns library.
+Integrates DNS functionality from Stefan Schmidt's morepowerdns library, which 
+is licensed under LGPL.
 
 
 USAGE
