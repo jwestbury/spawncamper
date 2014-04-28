@@ -8,6 +8,8 @@ import re
 import smtplib
 from netaddr import IPNetwork, IPAddress
 from time import strftime
+from shutil import copyfile
+from sys import exit
 
 def build_template(hostdirectory, templatefile):
 	"""Adds the Spawncamper template to Nagios templates config if it is not there already"""
@@ -135,6 +137,36 @@ def send_email(address = None, settings = None, hosts = None):
 		print "New hosts found, but no e-mail address specified."
 	else:
 		print "No new host list specified for e-mail."
+
+def init_config():
+	dirname = os.path.dirname(os.path.realpath(__file__))
+        if not os.path.isfile("%s/spawncamper.conf" % dirname):
+                try:
+                        copyfile("%s/spawncamper.conf.example" % dirname, "%s/spawncamper.conf" % dirname)
+                        print "WARNING: It appears to be your first time running Spawncamper.",
+                        print "If you want to use e-mail functioanly, please edit spawncamper.conf",
+                        print "with parameters suitable to your environment. Press Enter to continue,",
+                        print "or press ctrl-c to exit and configure spawncamper.conf."
+                        raw_input()
+                except KeyboardInterrupt:
+                        print "SIGINT detected, exiting."
+                        exit(0)
+                except:
+                        try:
+                                fh = open("%s/spawncamper.conf" % dirname, 'a+')
+                                fh.write("server: smtp.gmail.com\n")
+                                fh.write("port: 465\n")
+                                fh.write("username: joejack\n")
+                                fh.write("from: user@example.tld\n")
+                                fh.write("password: password")
+                                fh.close()
+                        except:
+                                print "Could not open or create spawncamper.conf.",
+                                print "Please manually copy spawncamper.conf.example to spawncamper.conf.",
+                                print "Press Enter to quit."
+                                raw_input()
+                                exit()
+
 	
 def read_config(config = None):
 	if config:
@@ -149,9 +181,7 @@ def read_config(config = None):
 	return settings
 
 def main(args):
-	# Show args to user
-	print args
-
+	init_config()
 	build_template(args.hostdirectory, args.templatefile)
 	hostlist = axfr.transfer(args.zone, args.nameserver)
 	l1, l2, exclusions = host_list(args.hostdirectory)
@@ -162,7 +192,7 @@ def main(args):
 		settings = read_config()
 	if args.subnet and (args.startip or args.endip):
 		print "Cannot use -c with -s or -e. Please use -c or -s and -e."
-		quit()
+		exit()
 	elif args.subnet:
 		foundhosts = host_match(matchtype = "cidr", hostlist = hostlist,
 			subnet = args.subnet, hostdirectory = args.hostdirectory,
