@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 #spawncamper.py
 
+# TODO:
+# Add in MAC address detection to avoid duplicate host entries -- use a
+#	command-line option to decide whether a user wants to permit duplicate
+#	entries (default: no duplicates).
+
 import argparse
 import axfr
 import os
@@ -33,7 +38,7 @@ define host{
 	flap_detection_enabled		1
 	process_perf_data		1
 	retain_status_information	1
-	retain_non_status_information	1
+	retain_nonstatus_information	1
 	register			0
 	}
 		"""
